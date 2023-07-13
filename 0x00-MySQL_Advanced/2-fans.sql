@@ -1,4 +1,4 @@
--- Task: Aggregate fan counts per country and rank the country origins based on the total number of fans
+-- Task: Rank country origins of bands by the number of (non-unique) fans
 
 -- Create a temporary table to store the aggregated fan counts per country
 CREATE TEMPORARY TABLE temp_fan_counts AS
