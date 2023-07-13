@@ -8,3 +8,4 @@ GROUP BY origin;
 SELECT origin, total_fans
 FROM temp_fan_counts
 ORDER BY total_fans DESC ;
+
