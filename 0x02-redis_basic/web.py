@@ -27,21 +27,27 @@ def get_page(url: str) -> str:
         print(f"Cache hit for URL: {url}")
         return cached_result.decode("utf-8")
 
-    # If not cached, fetch the content from the URL
-    response = requests.get(url)
+    try:
+        # If not cached, fetch the content from the URL
+        response = requests.get(url)
+        response.raise_for_status()  # Check if the request was successful
 
-    # Cache the response with a 10-second expiration time
-    redis_client.setex(url, 10, response.text)
+        # Cache the response with a 10-second expiration time
+        redis_client.setex(url, 10, response.text)
 
-    # Track the number of times the URL was accessed
-    redis_client.incr(f"count:{url}")
+        # Track the number of times the URL was accessed
+        redis_client.incr(f"count:{url}")
 
-    print(f"Cache miss for URL: {url}")
-    return response.text
+        print(f"Cache miss for URL: {url}")
+        return response.text
+
+    except requests.exceptions.RequestException as e:
+        print(f"Failed to fetch URL: {url} - {e}")
+        return ""
 
 if __name__ == "__main__":
     # Test the get_page function
-    url = "http://slowwly.robertomurray.co.uk/delay/5000/url/http://www.example.com"
+    url = "http://slowwly.robertomurray.co.uk/delay/5/url/http://www.example.com"
     print(get_page(url))
     print(get_page(url))  # Should return from cache due to the 10-second expiration
 
