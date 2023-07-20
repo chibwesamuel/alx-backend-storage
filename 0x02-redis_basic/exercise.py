@@ -75,49 +75,23 @@ class Cache:
         """
         return self.get(key, fn=int)
 
-    def count_calls(method: Callable) -> Callable:
+    @functools.wraps(store)  # Add the missing decorators
+    def store(self, data: Union[str, bytes, int, float]) -> str:
         """
-        Decorator to count how many times a method is called.
+        Store the input data in Redis with a random key and return the key.
+        This method is decorated with count_calls and call_history to track its usage and store history.
 
         Args:
-            method (Callable): The method to be decorated.
+            data (Union[str, bytes, int, float]): Data to be stored in Redis.
 
         Returns:
-            Callable: The decorated method.
+            str: The generated random key used to store the data in Redis.
         """
-        @functools.wraps(method)
-        def wrapper(self, *args, **kwargs):
-            key = method.__qualname__
-            self._redis.incr(key)
-            return method(self, *args, **kwargs)
+        key = str(uuid.uuid4())
+        self._redis.set(key, data)
+        return key
 
-        return wrapper
-
-    def call_history(method: Callable) -> Callable:
-        """
-        Decorator to store the history of inputs and outputs for a method.
-
-        Args:
-            method (Callable): The method to be decorated.
-
-        Returns:
-            Callable: The decorated method.
-        """
-        @functools.wraps(method)
-        def wrapper(self, *args, **kwargs):
-            inputs_key = f"{method.__qualname__}:inputs"
-            outputs_key = f"{method.__qualname__}:outputs"
-
-            self._redis.rpush(inputs_key, str(args))
-
-            result = method(self, *args, **kwargs)
-
-            self._redis.rpush(outputs_key, result)
-
-            return result
-
-        return wrapper
-
+    @functools.wraps(replay)  # Correct the function name
     def replay(self, method: Callable) -> None:
         """
         Display the history of calls of a particular function.
@@ -140,23 +114,6 @@ class Cache:
 
             print(f"{method.__qualname__}{input_str} -> {output_str}")
 
-    @count_calls
-    @call_history
-    def store(self, data: Union[str, bytes, int, float]) -> str:
-        """
-        Store the input data in Redis with a random key and return the key.
-        This method is decorated with count_calls and call_history to track its usage and store history.
-
-        Args:
-            data (Union[str, bytes, int, float]): Data to be stored in Redis.
-
-        Returns:
-            str: The generated random key used to store the data in Redis.
-        """
-        key = str(uuid.uuid4())
-        self._redis.set(key, data)
-        return key
-
 if __name__ == "__main__":
     cache = Cache()
 
@@ -173,11 +130,11 @@ if __name__ == "__main__":
 
     # Test counting method calls
     cache.store(b"first")
-    print(cache.get(cache.store.__qualname__))  # Output: b'1'
+    print(cache.get(cache.store.__name__))  # Output: b'1'
 
     cache.store(b"second")
     cache.store(b"third")
-    print(cache.get(cache.store.__qualname__))  # Output: b'3'
+    print(cache.get(cache.store.__name__))  # Output: b'3'
 
     # Test call history
     s1 = cache.store("first")
