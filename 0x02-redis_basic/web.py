@@ -8,9 +8,11 @@ import redis
 import time
 from typing import Callable
 
+
 def get_page(url: str) -> str:
     """
-    Fetch the HTML content of the given URL and cache the result with an expiration time of 10 seconds.
+    Fetch the HTML content of the given URL and cache the result with an
+    expiration time of 10 seconds.
 
     Args:
         url (str): The URL to fetch HTML content from.
@@ -45,9 +47,9 @@ def get_page(url: str) -> str:
         print(f"Failed to fetch URL: {url} - {e}")
         return ""
 
+
 if __name__ == "__main__":
     # Test the get_page function
-    url = "http://slowwly.robertomurray.co.uk/delay/5/url/http://www.example.com"
+    url = "http://slowwly.robertomurray.co.uk"
     print(get_page(url))
-    print(get_page(url))  # Should return from cache due to the 10-second expiration
-
+    print(get_page(url))  # Return from cache due to the 10-second expiration
