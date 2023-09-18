@@ -8,10 +8,12 @@ import uuid
 from typing import Union, Optional, Callable
 import functools
 
+
 class Cache:
     """
     Cache class to interact with Redis.
     """
+
 
     def __init__(self) -> None:
         """
@@ -19,6 +21,7 @@ class Cache:
         """
         self._redis = redis.Redis()
         self._redis.flushdb()
+
 
     def store(self, data: Union[str, bytes, int, float]) -> str:
         """
@@ -34,14 +37,18 @@ class Cache:
         self._redis.set(key, data)
         return key
 
-    def get(self, key: str, fn: Optional[Callable] = None) -> Union[str, bytes, int, float]:
+
+    def get(self, key: str, fn: Optional[Callable] = None) -> \
+            Union[str, bytes, int, float]:
         """
         Retrieve the data associated with the given key from Redis.
-        If a conversion function (fn) is provided, use it to convert the data back to the desired format.
+        If a conversion function (fn) is provided, use it to convert the data
+        back to the desired format.
 
         Args:
             key (str): The key to retrieve data from Redis.
-            fn (Optional[Callable]): The callable to convert the data (default is None).
+            fn (Optional[Callable]): The callable to convert the data (default
+            is None).
 
         Returns:
             Union[str, bytes, int, float]: The retrieved data from Redis.
@@ -50,6 +57,7 @@ class Cache:
         if fn is None:
             return data
         return fn(data)
+
 
     def get_str(self, key: str) -> str:
         """
@@ -63,6 +71,7 @@ class Cache:
         """
         return self.get(key, fn=lambda d: d.decode("utf-8"))
 
+
     def get_int(self, key: str) -> int:
         """
         Retrieve the data associated with the given key from Redis as an integer.
@@ -75,11 +84,13 @@ class Cache:
         """
         return self.get(key, fn=int)
 
-    @functools.wraps(store)  # Add the missing decorators
+
+    @functools.wraps(store)
     def store(self, data: Union[str, bytes, int, float]) -> str:
         """
         Store the input data in Redis with a random key and return the key.
-        This method is decorated with count_calls and call_history to track its usage and store history.
+        This method is decorated with count_calls and call_history to track
+        its usage and store history.
 
         Args:
             data (Union[str, bytes, int, float]): Data to be stored in Redis.
@@ -91,7 +102,8 @@ class Cache:
         self._redis.set(key, data)
         return key
 
-    @functools.wraps(replay)  # Correct the function name
+
+    @functools.wraps(replay)
     def replay(self, method: Callable) -> None:
         """
         Display the history of calls of a particular function.
@@ -102,19 +114,24 @@ class Cache:
         Returns:
             None
         """
-        inputs_key = f"{method.__qualname__}:inputs"
-        outputs_key = f"{method.__qualname__}:outputs"
+        key = method.__qualname__
+        inputs_key = f"{key}:inputs"
+        outputs_key = f"{key}:outputs"
 
         inputs = self._redis.lrange(inputs_key, 0, -1)
         outputs = self._redis.lrange(outputs_key, 0, -1)
+
+        print(f"{key} was called {len(inputs)} times:")
 
         for input_args, output in zip(inputs, outputs):
             input_str = input_args.decode("utf-8")
             output_str = output.decode("utf-8")
 
-            print(f"{method.__qualname__}{input_str} -> {output_str}")
+            print(f"{key}{input_str} -> {output_str}")
+
 
 if __name__ == "__main__":
+    """Main function"""
     cache = Cache()
 
     # Test storing and retrieving data from Redis with conversion
@@ -130,11 +147,11 @@ if __name__ == "__main__":
 
     # Test counting method calls
     cache.store(b"first")
-    print(cache.get(cache.store.__name__))  # Output: b'1'
+    print(cache.get(cache.store.__qualname__))  # Output: b'1'
 
     cache.store(b"second")
     cache.store(b"third")
-    print(cache.get(cache.store.__name__))  # Output: b'3'
+    print(cache.get(cache.store.__qualname__))  # Output: b'3'
 
     # Test call history
     s1 = cache.store("first")
@@ -142,4 +159,3 @@ if __name__ == "__main__":
     s3 = cache.store("third")
 
     cache.replay(cache.store)
-
